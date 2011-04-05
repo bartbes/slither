@@ -21,9 +21,20 @@ freely, subject to the following restrictions:
   distribution.
 ]]
 
+local function stringtotable(path)
+	local t = _G
+	local name
+	for part in path:gmatch("[^%.]+") do
+		t = name and t[name] or t
+		name = part
+	end
+	return t, name
+end
+
 local function class_generator(name, b, t)
 	local temp = {}
-	_G[name] = setmetatable(temp, {
+	local root_table, name = stringtotable(name)
+	root_table[name] = setmetatable(temp, {
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
@@ -72,7 +83,8 @@ local function inheritance_handler(name, ...)
 		return class_generator(name, {}, args[1])
 	end
 	for i, v in ipairs(args) do
-		args[i] = _G[v]
+		local t, name = stringtotable(v)
+		args[i] = t[name]
 	end
 	return function(t)
 		return class_generator(name, args, t)
