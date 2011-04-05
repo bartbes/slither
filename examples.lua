@@ -25,7 +25,9 @@ class "Food" {
 	end
 }
 
-class "Cake" ("Food") {
+foods = {}
+
+class "foods.Cake" ("Food") {
 	eat = function(self)
 		print("LIES!")
 	end
@@ -33,7 +35,7 @@ class "Cake" ("Food") {
 
 banana = Food("banana")
 chocolate = Food("chocolate")
-portal_cake = Cake("Portal Cake")
+portal_cake = foods.Cake("Portal Cake")
 
 banana:eat()
 portal_cake:eat()
