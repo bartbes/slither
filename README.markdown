@@ -4,11 +4,15 @@
 - The class name of the parent(s) is specified as strings
 
 This means that:
+
     class Cake (Food):
       pass
+
 becomes
+
     class "Cake" ("Food") {
     }
+
 
 If you just want to use the library, slither.lua is the file you'll want, examples are present in examples.lua.
 
