@@ -9,7 +9,19 @@ class "Food" {
 	end,
 
 	eat = function(self)
-		print(("The %s has been eaten :("):format(self.name))
+		if self.eaten then
+			print("You bite in nothing, it hurts your teeth.")
+		else
+			print(("The %s has been eaten :("):format(self.name))
+			self.eaten = true
+		end
+	end,
+
+	__add__ = function(self, other)
+		if type(other) == "table" and other.__class__ == self.__class__ then
+			print("You smash the food together and create:")
+			return self.__class__(("%s-y %s"):format(other.name, self.name))
+		end
 	end
 }
 
@@ -20,7 +32,11 @@ class "Cake" ("Food") {
 }
 
 banana = Food("banana")
+chocolate = Food("chocolate")
 portal_cake = Cake("Portal Cake")
 
 banana:eat()
 portal_cake:eat()
+
+chocolate_banana = banana + chocolate
+chocolate_banana:eat()
