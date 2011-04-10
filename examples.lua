@@ -42,3 +42,5 @@ portal_cake:eat()
 
 chocolate_banana = banana + chocolate
 chocolate_banana:eat()
+
+assert(isinstance(chocolate_banana, Food) and isinstance(portal_cake, Food) and issubclass(foods.Cake, Food) and issubclass(foods.Cake, foods.Cake) and not issubclass(Food, foods.Cake), "Inheritance checking is wrong")
