@@ -32,7 +32,17 @@ local function stringtotable(path)
 end
 
 local function class_generator(name, b, t)
-	local temp = {}
+	local parents = {}
+	for _, v in ipairs(b) do
+		parents[v] = true
+		for _, v in ipairs(v.__parents__) do
+			parents[v] = true
+		end
+	end
+	local temp = { __parents__ = {} }
+	for i, v in pairs(parents) do
+		table.insert(temp.__parents__, i)
+	end
 	local root_table, name = stringtotable(name)
 	root_table[name] = setmetatable(temp, {
 		__index = function(self, key)
@@ -95,4 +105,26 @@ function class(name)
 	return function(...)
 		return inheritance_handler(name, ...)
 	end
+end
+
+function issubclass(class, parents)
+	if parents.__class__ then parents = {parents} end
+	for i, v in ipairs(parents) do
+		local found = true
+		if v ~= class then
+			found = false
+			for _, p in ipairs(class.__parents__) do
+				if v == p then
+					found = true
+					break
+				end
+			end
+		end
+		if not found then return false end
+	end
+	return true
+end
+
+function isinstance(obj, parents)
+	return type(obj) == "table" and obj.__class__ and issubclass(obj.__class__, parents)
 end
