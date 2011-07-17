@@ -43,8 +43,7 @@ local function class_generator(name, b, t)
 	for i, v in pairs(parents) do
 		table.insert(temp.__parents__, i)
 	end
-	local root_table, name = stringtotable(name)
-	root_table[name] = setmetatable(temp, {
+	return setmetatable(temp, {
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
@@ -90,14 +89,17 @@ end
 local function inheritance_handler(name, ...)
 	local args = {...}
 	if #args == 1 and type(args[1]) == "table" then
-		return class_generator(name, {}, args[1])
+		local root_table, name = stringtotable(name)
+		root_table[name] = class_generator(name, {}, args[1])
+		return
 	end
 	for i, v in ipairs(args) do
 		local t, name = stringtotable(v)
 		args[i] = t[name]
 	end
 	return function(t)
-		return class_generator(name, args, t)
+		local root_table, name = stringtotable(name)
+		root_table[name] = class_generator(name, args, t)
 	end
 end
 
@@ -127,4 +129,16 @@ end
 
 function isinstance(obj, parents)
 	return type(obj) == "table" and obj.__class__ and issubclass(obj.__class__, parents)
+end
+
+-- Export a Class Commons interface
+-- to allow interoperability between
+-- class libraries.
+-- See https://github.com/bartbes/Class-Commons
+if common_class ~= false then
+	common = {}
+	function common.class(name, prototype, superclass)
+		prototype.__init__ = prototype.init
+		return class_generator(name, {superclass}, prototype)
+	end
 end
