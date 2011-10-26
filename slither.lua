@@ -51,6 +51,10 @@ local function class_generator(name, b, t)
 			for i, v in ipairs(b) do
 				if v[key] then return v[key] end
 			end
+			if key == "__getattr__" then return end
+			if self.__getattr__ then
+				return self:__getattr__(key)
+			end
 		end,
 		__newindex = function(self, key, value)
 			t[key] = value
@@ -58,6 +62,13 @@ local function class_generator(name, b, t)
 		__call = function(self, ...)
 			local smt = getmetatable(self)
 			local mt = {__index = smt.__index}
+			function mt:__newindex(key, value)
+				if self.__setattr__ then
+					return self:__setattr__(key, value)
+				else
+					return rawset(self, key, value)
+				end
+			end
 			if self.__cmp__ then
 				if not smt.eq or not smt.lt then
 					function smt.eq(a, b)
