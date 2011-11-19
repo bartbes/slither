@@ -152,4 +152,8 @@ if common_class ~= false then
 		prototype.__init__ = prototype.init
 		return class_generator(name, {superclass}, prototype)
 	end
+
+	function common.instance(class, ...)
+		return class(...)
+	end
 end
