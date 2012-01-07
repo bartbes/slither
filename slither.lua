@@ -97,26 +97,40 @@ local function class_generator(name, b, t)
 		})
 end
 
-local function inheritance_handler(name, ...)
+local function inheritance_handler(set, name, ...)
 	local args = {...}
-	if #args == 1 and type(args[1]) == "table" then
-		local root_table, name = stringtotable(name)
-		root_table[name] = class_generator(name, {}, args[1])
-		return
+	local t = nil
+	if #args == 1 and type(args[1]) == "table" and not args[1].__class__ then
+		t = args[1]
+		args = {}
 	end
+
 	for i, v in ipairs(args) do
-		local t, name = stringtotable(v)
-		args[i] = t[name]
+		if type(v) == "string" then
+			local t, name = stringtotable(v)
+			args[i] = t[name]
+		end
 	end
-	return function(t)
-		local root_table, name = stringtotable(name)
-		root_table[name] = class_generator(name, args, t)
+
+	local func = function(t)
+		local class = class_generator(name, args, t)
+		if set then
+			local root_table, name = stringtotable(name)
+			root_table[name] = class
+		end
+		return class
+	end
+
+	if t then
+		return func(t)
+	else
+		return func
 	end
 end
 
 function class(name)
 	return function(...)
-		return inheritance_handler(name, ...)
+		return inheritance_handler(true, name, ...)
 	end
 end
 

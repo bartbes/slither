@@ -27,18 +27,28 @@ class "Food" {
 
 foods = {}
 
+-- Old-style inheritence
 class "foods.Cake" ("Food") {
 	eat = function(self)
 		print("LIES!")
 	end
 }
 
+-- New-style inheritence
+class "foods.Candy" (Food) {
+	eat = function(self)
+		print("The dentist frowns upon your actions!")
+	end
+}
+
 banana = Food("banana")
 chocolate = Food("chocolate")
 portal_cake = foods.Cake("Portal Cake")
+sugary_candy = foods.Candy("Sugary Candy")
 
 banana:eat()
 portal_cake:eat()
+sugary_candy:eat()
 
 chocolate_banana = banana + chocolate
 chocolate_banana:eat()

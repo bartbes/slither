@@ -1,7 +1,6 @@
-**Slither** is a class library for lua that mimics python's classes, at the moment it has two big exceptions:
+**Slither** is a class library for lua that mimics python's classes, at the moment it has one big exception:
 
 - The class name is specified as a string
-- The class name of the parent(s) is specified as strings
 
 This means that:
 
@@ -10,7 +9,7 @@ This means that:
 
 becomes
 
-    class "Cake" ("Food") {
+    class "Cake" (Food) {
     }
 
 
