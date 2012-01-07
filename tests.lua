@@ -241,3 +241,21 @@ Test("No leaking internal functions/variables", function()
 	assert(not class_generator)
 	assert(not inheritance_handler)
 end)
+
+Test("New-style inheritence", function()
+	class "TestBase" {
+		some_var = true,
+		some_method = function(self) return self.some_var end,
+	}
+	class "Test" (TestBase) {
+	}
+	t = Test()
+	assert(t.some_var)
+	assert(t:some_method())
+end)
+
+Test("Returning of class", function()
+	test = class "Test" {
+	}
+	assert(test == Test)
+end)
