@@ -129,11 +129,20 @@ local function inheritance_handler(set, name, ...)
 	end
 end
 
-function class(name)
-	return function(...)
-		return inheritance_handler(true, name, ...)
-	end
-end
+class = setmetatable({
+	private = function(name)
+		return function(...)
+			return inheritance_handler(false, name, ...)
+		end
+	end,
+}, {
+	__call = function(self, name)
+		return function(...)
+			return inheritance_handler(true, name, ...)
+		end
+	end,
+})
+
 
 function issubclass(class, parents)
 	if parents.__class__ then parents = {parents} end

@@ -259,3 +259,10 @@ Test("Returning of class", function()
 	}
 	assert(test == Test)
 end)
+
+Test("Private class definition", function()
+	local test = class.private "TestClass" {
+	}
+	assert(TestClass == nil)
+	assert(test)
+end)
