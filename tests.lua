@@ -266,3 +266,14 @@ Test("Private class definition", function()
 	assert(TestClass == nil)
 	assert(test)
 end)
+
+Test("__getattr__ not getting other __*__", function()
+	class "Test" {
+		__getattr__ = function()
+			error("__getattr__ reached")
+		end,
+	}
+	-- __getattr__ used to get called on __*__
+	-- in init in the past, make sure it's fixed
+	Test()
+end)
