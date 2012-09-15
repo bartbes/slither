@@ -51,8 +51,7 @@ local function class_generator(name, b, t)
 			for i, v in ipairs(b) do
 				if v[key] then return v[key] end
 			end
-			if key == "__getattr__" then return end
-			if key == "__setattr__" then return end
+			if key:match("^__.+__$") then return end
 			if self.__getattr__ then
 				return self:__getattr__(key)
 			end
