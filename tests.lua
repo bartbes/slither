@@ -277,3 +277,34 @@ Test("__getattr__ not getting other __*__", function()
 	-- in init in the past, make sure it's fixed
 	Test()
 end)
+
+Test("Deep inheritance", function()
+	class "A"
+	{
+		test1 = true,
+		test2 = function() return true end
+	}
+
+	class "B" (A) {}
+	class "C" (B) {}
+	class "D" (C) {}
+
+	d = D()
+	assert(d.test1)
+	assert(d.test2())
+end)
+
+Test("Double (indirect) inheritance", function()
+	class "A"
+	{
+		test1 = true,
+		test2 = function() return true end
+	}
+
+	class "B" (A) {}
+	class "C" (B, A) {}
+
+	c = C()
+	assert(c.test1)
+	assert(c.test2())
+end)
