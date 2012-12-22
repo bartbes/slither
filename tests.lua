@@ -278,6 +278,22 @@ Test("__getattr__ not getting other __*__", function()
 	Test()
 end)
 
+Test("Number indexes and __*__ getattr prevention", function()
+	class "Test"
+	{
+		__getattr__ = function(self, key)
+			if type(key) == "string" then
+				error("__getattr__ reached on __*__")
+			end
+			return true
+		end,
+	}
+
+	test = Test()
+	assert(test[1])
+	assert(not test["__init__"])
+end)
+
 Test("Deep inheritance", function()
 	class "A"
 	{
