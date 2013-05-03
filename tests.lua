@@ -324,3 +324,9 @@ Test("Double (indirect) inheritance", function()
 	assert(c.test1)
 	assert(c.test2())
 end)
+
+Test("Error on non-existent parent", function()
+	local parent = nil
+	local success, cont = pcall(class "A", parent)
+	assert(not success, "Did not error!")
+end)

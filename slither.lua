@@ -99,6 +99,13 @@ end
 
 local function inheritance_handler(set, name, ...)
 	local args = {...}
+
+	for i = 1, select("#", ...) do
+		if args[i] == nil then
+			error("nil passed to class, check the parents")
+		end
+	end
+
 	local t = nil
 	if #args == 1 and type(args[1]) == "table" and not args[1].__class__ then
 		t = args[1]
