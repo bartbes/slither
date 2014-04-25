@@ -39,6 +39,7 @@ local function class_generator(name, b, t)
 			parents[v] = true
 		end
 	end
+
 	local temp = { __parents__ = {} }
 	for i, v in pairs(parents) do
 		table.insert(temp.__parents__, i)
@@ -47,18 +48,20 @@ local function class_generator(name, b, t)
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
-			if t[key] then return t[key] end
+			if t[key] ~= nil then return t[key] end
 			for i, v in ipairs(b) do
-				if v[key] then return v[key] end
+				if v[key] ~= nil then return v[key] end
 			end
 			if tostring(key):match("^__.+__$") then return end
 			if self.__getattr__ then
 				return self:__getattr__(key)
 			end
 		end,
+
 		__newindex = function(self, key, value)
 			t[key] = value
 		end,
+
 		__call = function(self, ...)
 			local smt = getmetatable(self)
 			local mt = {__index = smt.__index}
@@ -69,6 +72,7 @@ local function class_generator(name, b, t)
 					return rawset(self, key, value)
 				end
 			end
+
 			if self.__cmp__ then
 				if not smt.eq or not smt.lt then
 					function smt.eq(a, b)
@@ -81,6 +85,7 @@ local function class_generator(name, b, t)
 				mt.__eq = smt.eq
 				mt.__lt = smt.lt
 			end
+
 			for i, v in pairs{
 				__call__ = "__call", __len__ = "__len",
 				__add__ = "__add", __sub__ = "__sub",
@@ -90,6 +95,7 @@ local function class_generator(name, b, t)
 				} do
 				if self[i] then mt[v] = self[i] end
 			end
+
 			local instance = setmetatable({}, mt)
 			if instance.__init__ then instance:__init__(...) end
 			return instance

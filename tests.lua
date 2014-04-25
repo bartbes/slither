@@ -330,3 +330,12 @@ Test("Error on non-existent parent", function()
 	local success, cont = pcall(class "A", parent)
 	assert(not success, "Did not error!")
 end)
+
+Test("Resolving false, non-nil values", function()
+	class "A"
+	{
+		test = false
+	}
+
+	assert(A.test == false)
+end)
