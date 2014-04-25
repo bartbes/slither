@@ -1,5 +1,6 @@
---[[ zlib license:
-Copyright (c) 2011 Bart van Strien
+local _LICENSE = -- zlib / libpng
+[[
+Copyright (c) 2011-2014 Bart van Strien
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -20,6 +21,15 @@ freely, subject to the following restrictions:
   3. This notice may not be removed or altered from any source
   distribution.
 ]]
+
+local class =
+{
+	_VERSION = "Slither 20140425",
+	-- I have no better versioning scheme, deal with it
+	_DESCRIPTION = "Slither is a pythonic class library for lua",
+	_URL = "http://bitbucket.org/bartbes/slither",
+	_LICENSE = _LICENSE,
+}
 
 local function stringtotable(path)
 	local t = _G
@@ -141,13 +151,13 @@ local function inheritance_handler(set, name, ...)
 	end
 end
 
-class = setmetatable({
-	private = function(name)
-		return function(...)
-			return inheritance_handler(false, name, ...)
-		end
-	end,
-}, {
+function class.private(name)
+	return function(...)
+		return inheritance_handler(false, name, ...)
+	end
+end
+
+class = setmetatable(class, {
 	__call = function(self, name)
 		return function(...)
 			return inheritance_handler(true, name, ...)
@@ -156,7 +166,7 @@ class = setmetatable({
 })
 
 
-function issubclass(class, parents)
+function class.issubclass(class, parents)
 	if parents.__class__ then parents = {parents} end
 	for i, v in ipairs(parents) do
 		local found = true
@@ -174,14 +184,17 @@ function issubclass(class, parents)
 	return true
 end
 
-function isinstance(obj, parents)
-	return type(obj) == "table" and obj.__class__ and issubclass(obj.__class__, parents)
+function class.isinstance(obj, parents)
+	return type(obj) == "table" and obj.__class__ and class.issubclass(obj.__class__, parents)
 end
 
 -- Export a Class Commons interface
 -- to allow interoperability between
 -- class libraries.
 -- See https://github.com/bartbes/Class-Commons
+--
+-- NOTE: Implicitly global, as per specification, unfortunately there's no nice
+-- way to both provide this extra interface, and use locals.
 if common_class ~= false then
 	common = {}
 	function common.class(name, prototype, superclass)
@@ -193,3 +206,5 @@ if common_class ~= false then
 		return class(...)
 	end
 end
+
+return class

@@ -1,4 +1,4 @@
-require "slither"
+class = require "slither"
 
 local tests = {}
 local env_mt = {__index = _G}
