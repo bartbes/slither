@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20140425",
+	_VERSION = "Slither 20140713",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -34,10 +34,12 @@ local class =
 local function stringtotable(path)
 	local t = _G
 	local name
+
 	for part in path:gmatch("[^%.]+") do
 		t = name and t[name] or t
 		name = part
 	end
+
 	return t, name
 end
 
@@ -54,7 +56,8 @@ local function class_generator(name, b, t)
 	for i, v in pairs(parents) do
 		table.insert(temp.__parents__, i)
 	end
-	return setmetatable(temp, {
+
+	local class = setmetatable(temp, {
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
@@ -111,6 +114,12 @@ local function class_generator(name, b, t)
 			return instance
 		end
 		})
+
+	for i, v in ipairs(t.__attributes__ or {}) do
+		class = v(class) or class
+	end
+
+	return class
 end
 
 local function inheritance_handler(set, name, ...)
