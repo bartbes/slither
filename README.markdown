@@ -15,6 +15,8 @@ becomes
 
 If you just want to use the library, slither.lua is the file you'll want, examples are present in examples.lua.
 
+Documentation can be found at [my documentation wiki](http://docs.bartbes.com/slither)
+
 Enjoy!
 
 (P.S. Do feel free to report any bugs you might encounter)

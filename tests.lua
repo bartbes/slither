@@ -339,3 +339,117 @@ Test("Resolving false, non-nil values", function()
 
 	assert(A.test == false)
 end)
+
+Test("Attributes get called", function()
+	local called = false
+
+	local function attr(class)
+		called = true
+	end
+
+	class "A"
+	{
+		__attributes__ = {attr}
+	}
+
+	assert(called)
+end)
+
+Test("Attribute can modify class", function()
+	local function attr(class)
+		class.cake = true
+	end
+
+	class "A"
+	{
+		__attributes__ = {attr}
+	}
+
+	assert(A.cake)
+end)
+
+Test("Attribute can modify constructor", function()
+	local called = false
+
+	local function attr(class)
+		local oldinit = class.__init__ or function() end
+		class.__init__ = function(...)
+			called = true
+		end
+	end
+
+	class "A"
+	{
+		__attributes__ = {attr}
+	}
+
+	local a = A()
+	assert(called)
+end)
+
+Test("Attributes are not inherited", function()
+	local called = false
+	local function attr()
+		called = true
+	end
+
+	class "A"
+	{
+		__attributes__ = {attr}
+	}
+
+	called = false
+
+	class "B" (A)
+	{
+	}
+
+	assert(not called)
+end)
+
+Test("Attribute can replace return value", function()
+	local function attr()
+		return "a"
+	end
+
+	assert((class "A" { __attributes__ = {attr} }) == "a")
+end)
+
+Test("Attributes are called in order", function()
+	local function attr1(class)
+		class.stage = 1
+	end
+
+	local function attr2(class)
+		if class.stage == 1 then
+			class.stage = 2
+		end
+	end
+
+	class "A"
+	{
+		__attributes__ = {attr1, attr2}
+	}
+
+	assert(A.stage == 2)
+end)
+
+Test("Attributes can be anything callable", function()
+	class "Attribute"
+	{
+		called = false,
+
+		__call__ = function(self)
+			self.called = true
+		end
+	}
+
+	local attr = Attribute()
+
+	class "A"
+	{
+		__attributes__ = {attr}
+	}
+
+	assert(attr.called)
+end)
