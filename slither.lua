@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20140713",
+	_VERSION = "Slither 20140827",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
