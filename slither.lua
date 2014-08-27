@@ -104,7 +104,8 @@ local function class_generator(name, b, t)
 				__add__ = "__add", __sub__ = "__sub",
 				__mul__ = "__mul", __div__ = "__div",
 				__mod__ = "__mod", __pow__ = "__pow",
-				__neg__ = "__unm"
+				__neg__ = "__unm", __concat__ = "__concat",
+				__str__ = "__tostring",
 				} do
 				if self[i] then mt[v] = self[i] end
 			end
