@@ -75,7 +75,7 @@ local function class_generator(name, b, t)
 			t[key] = value
 		end,
 
-		allocate = function()
+		allocate = function(instance)
 			local smt = getmetatable(temp)
 			local mt = {__index = smt.__index}
 
@@ -111,7 +111,7 @@ local function class_generator(name, b, t)
 				if temp[i] then mt[v] = temp[i] end
 			end
 
-			return setmetatable({}, mt)
+			return setmetatable(instance or {}, mt)
 		end,
 
 		__call = function(self, ...)
