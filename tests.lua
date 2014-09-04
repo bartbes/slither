@@ -453,3 +453,19 @@ Test("Attributes can be anything callable", function()
 
 	assert(attr.called)
 end)
+
+Test("Allocate allocates, but does not call the constructor", function()
+	class "A"
+	{
+		__init__ = function(self)
+			self.called = true
+		end
+	}
+
+	local a = A()
+	local b = getmetatable(A).allocate()
+
+	assert(a.called)
+	assert(not b.called)
+	assert(a.__init__ == b.__init__)
+end)

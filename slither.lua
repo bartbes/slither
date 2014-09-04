@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20140827",
+	_VERSION = "Slither 20140904",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -75,9 +75,10 @@ local function class_generator(name, b, t)
 			t[key] = value
 		end,
 
-		__call = function(self, ...)
-			local smt = getmetatable(self)
+		allocate = function()
+			local smt = getmetatable(temp)
 			local mt = {__index = smt.__index}
+
 			function mt:__newindex(key, value)
 				if self.__setattr__ then
 					return self:__setattr__(key, value)
@@ -86,7 +87,7 @@ local function class_generator(name, b, t)
 				end
 			end
 
-			if self.__cmp__ then
+			if temp.__cmp__ then
 				if not smt.eq or not smt.lt then
 					function smt.eq(a, b)
 						return a.__cmp__(a, b) == 0
@@ -107,10 +108,14 @@ local function class_generator(name, b, t)
 				__neg__ = "__unm", __concat__ = "__concat",
 				__str__ = "__tostring",
 				} do
-				if self[i] then mt[v] = self[i] end
+				if temp[i] then mt[v] = temp[i] end
 			end
 
-			local instance = setmetatable({}, mt)
+			return setmetatable({}, mt)
+		end,
+
+		__call = function(self, ...)
+			local instance = getmetatable(self).allocate()
 			if instance.__init__ then instance:__init__(...) end
 			return instance
 		end
