@@ -469,3 +469,14 @@ Test("Allocate allocates, but does not call the constructor", function()
 	assert(not b.called)
 	assert(a.__init__ == b.__init__)
 end)
+
+Test("Allocate can allocate 'on' existing tables", function()
+	class "A"
+	{
+		test1 = true
+	}
+
+	local a = getmetatable(A).allocate({test2 = true})
+	assert(a.test1)
+	assert(a.test2)
+end)
