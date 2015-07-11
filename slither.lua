@@ -245,7 +245,8 @@ end
 
 -- And isinstance defers to issubclass.
 function class.isinstance(obj, parents)
-	return type(obj) == "table" and obj.__class__ and class.issubclass(obj.__class__, parents)
+	return type(obj) == "table" and obj.__class__ and
+			class.issubclass(obj.__class__, parents)
 end
 
 -- Our AnnotationWrapper is a purely file local class, it's used to store
@@ -301,7 +302,8 @@ class.Override = class.private "class.Override" (class.Annotation)
 			end
 		end
 
-		error(name .. " is marked override, but does not override a field or method from a baseclass")
+		error(name .. " is marked override, but does not override a field or" ..
+				" method from a baseclass")
 	end,
 }
 
