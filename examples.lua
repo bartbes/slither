@@ -55,6 +55,8 @@ chocolate_banana:eat()
 
 assert(class.isinstance(chocolate_banana, Food) and class.isinstance(portal_cake, Food) and class.issubclass(foods.Cake, Food) and class.issubclass(foods.Cake, foods.Cake) and not class.issubclass(Food, foods.Cake), "Inheritance checking is wrong")
 
+Override = class.Override
+
 class "Debugged" (class.Annotation)
 {
 	apply = function(self, f, name, class)
@@ -62,19 +64,6 @@ class "Debugged" (class.Annotation)
 			print("Function " .. class.__name__ .. "." .. name .. " called with " .. select('#', ...) .. " arguments")
 			return f(...)
 		end
-	end,
-}
-
-class "Override" (class.Annotation)
-{
-	apply = function(self, f, name, class)
-		for i, v in ipairs(class.__parents__) do
-			if v[name] then
-				return f
-			end
-		end
-
-		error(name .. " is marked override, but does not override a field or method from a baseclass")
 	end,
 }
 

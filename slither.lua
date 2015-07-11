@@ -292,6 +292,19 @@ class.Annotation = class.private "class.Annotation"
 	end,
 }
 
+class.Override = class.private "class.Override" (class.Annotation)
+{
+	apply = function(self, f, name, class)
+		for i, v in ipairs(class.__parents__) do
+			if v[name] then
+				return f
+			end
+		end
+
+		error(name .. " is marked override, but does not override a field or method from a baseclass")
+	end,
+}
+
 -- Export a Class Commons interface
 -- to allow interoperability between
 -- class libraries.
