@@ -1,4 +1,4 @@
-require "slither"
+local class = require "slither"
 
 class "Food" {
 	eaten = false,
@@ -53,4 +53,48 @@ sugary_candy:eat()
 chocolate_banana = banana + chocolate
 chocolate_banana:eat()
 
-assert(isinstance(chocolate_banana, Food) and isinstance(portal_cake, Food) and issubclass(foods.Cake, Food) and issubclass(foods.Cake, foods.Cake) and not issubclass(Food, foods.Cake), "Inheritance checking is wrong")
+assert(class.isinstance(chocolate_banana, Food) and class.isinstance(portal_cake, Food) and class.issubclass(foods.Cake, Food) and class.issubclass(foods.Cake, foods.Cake) and not class.issubclass(Food, foods.Cake), "Inheritance checking is wrong")
+
+class "Debugged" (class.Annotation)
+{
+	apply = function(self, f, name, class)
+		return function(...)
+			print("Function " .. class.__name__ .. "." .. name .. " called with " .. select('#', ...) .. " arguments")
+			return f(...)
+		end
+	end,
+}
+
+class "Override" (class.Annotation)
+{
+	apply = function(self, f, name, class)
+		for i, v in ipairs(class.__parents__) do
+			if v[name] then
+				return f
+			end
+		end
+
+		error(name .. " is marked override, but does not override a field or method from a baseclass")
+	end,
+}
+
+class "Test"
+{
+	test = function()
+	end,
+}
+
+class "TestChild" (Test)
+{
+	test = Debugged() + Override() +
+	function()
+	end,
+
+	testb = Debugged() + function() end,
+
+	--testc = Override() + function() end,
+}
+
+t = TestChild()
+t:test(1)
+t:testb()

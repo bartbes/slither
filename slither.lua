@@ -1,6 +1,6 @@
 local _LICENSE = -- zlib / libpng
 [[
-Copyright (c) 2011-2014 Bart van Strien
+Copyright (c) 2011-2015 Bart van Strien
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -24,13 +24,14 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20140904",
+	_VERSION = "Slither 20150711",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
 	_LICENSE = _LICENSE,
 }
 
+-- Because we parse "string paths", yet we need an actual table
 local function stringtotable(path)
 	local t = _G
 	local name
@@ -43,7 +44,11 @@ local function stringtotable(path)
 	return t, name
 end
 
+local AnnotationWrapper -- defined later as a class
+
+-- This is where the actual class generation happens
 local function class_generator(name, b, t)
+	-- Compose a list of parents
 	local parents = {}
 	for _, v in ipairs(b) do
 		parents[v] = true
@@ -52,12 +57,21 @@ local function class_generator(name, b, t)
 		end
 	end
 
+	-- Create our 'temp' table, which ends up being the class object
 	local temp = { __parents__ = {} }
 	for i, v in pairs(parents) do
 		table.insert(temp.__parents__, i)
 	end
 
+	-- Store a reference to the library table here
+	local classlib = class
+
+	-- Create our class by attaching a metatable to our object
 	local class = setmetatable(temp, {
+		-- We first catch __class__ and __name__, then look at 't', the given
+		-- definition for our class. Afterwards, we check our parents, in order.
+		-- If we still don't have a match, make sure we're not matching a
+		-- special method, then call __getattr__ if defined.
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
@@ -71,14 +85,20 @@ local function class_generator(name, b, t)
 			end
 		end,
 
+		-- Attaching things to our class later on can simply be modeled
+		-- as assigning to the original input table.
 		__newindex = function(self, key, value)
 			t[key] = value
 		end,
 
+		-- Here we 'allocate' an object
 		allocate = function(instance)
+			-- Create our object's metatable
 			local smt = getmetatable(temp)
 			local mt = {__index = smt.__index}
 
+			-- Assigning to the object either calls __setattr__ or sets it on
+			-- the object directly.
 			function mt:__newindex(key, value)
 				if self.__setattr__ then
 					return self:__setattr__(key, value)
@@ -87,6 +107,9 @@ local function class_generator(name, b, t)
 				end
 			end
 
+			-- If __cmp__ is defined, we want to emit both the eq and lt
+			-- operations, we cache it on the class itself and then assign it
+			-- to our metatable.
 			if temp.__cmp__ then
 				if not smt.eq or not smt.lt then
 					function smt.eq(a, b)
@@ -100,6 +123,7 @@ local function class_generator(name, b, t)
 				mt.__lt = smt.lt
 			end
 
+			-- Now map the rest of our special functions to metamethods
 			for i, v in pairs{
 				__call__ = "__call", __len__ = "__len",
 				__add__ = "__add", __sub__ = "__sub",
@@ -111,9 +135,12 @@ local function class_generator(name, b, t)
 				if temp[i] then mt[v] = temp[i] end
 			end
 
+			-- Finally join our (possibly given) instance with the metatable
 			return setmetatable(instance or {}, mt)
 		end,
 
+		-- Our 'new' call, first allocate an object of this class, then call
+		-- the constructor.
 		__call = function(self, ...)
 			local instance = getmetatable(self).allocate()
 			if instance.__init__ then instance:__init__(...) end
@@ -121,6 +148,15 @@ local function class_generator(name, b, t)
 		end
 		})
 
+	-- If annotations are used, we are left with a bunch of AnnotationWrapper
+	-- objects, here we resolve them and replace them with the resulting value.
+	for i, v in pairs(t) do
+		if classlib.isinstance(v, AnnotationWrapper) then
+			t[i] = v:resolve(i, class)
+		end
+	end
+
+	-- Now we deal with class attributes
 	for i, v in ipairs(t.__attributes__ or {}) do
 		class = v(class) or class
 	end
@@ -128,6 +164,10 @@ local function class_generator(name, b, t)
 	return class
 end
 
+-- Here we determine if we've been passed a list of parents, and if so, convert
+-- them from strings if necessary. Then we produce a new function that results
+-- in the final call to class_generator. If we've not been passed parents, call
+-- class_generator now, we already have our prototype.
 local function inheritance_handler(set, name, ...)
 	local args = {...}
 
@@ -166,12 +206,14 @@ local function inheritance_handler(set, name, ...)
 	end
 end
 
+-- If class.private is called, we don't set the resulting variable
 function class.private(name)
 	return function(...)
 		return inheritance_handler(false, name, ...)
 	end
 end
 
+-- But if class is called, we do
 class = setmetatable(class, {
 	__call = function(self, name)
 		return function(...)
@@ -180,7 +222,9 @@ class = setmetatable(class, {
 	end,
 })
 
-
+-- issubclass is a "simple" search
+-- Note the "fancy" feature where issubclass(A, A) is true because {A} is the
+-- first list of parents searched.
 function class.issubclass(class, parents)
 	if parents.__class__ then parents = {parents} end
 	for i, v in ipairs(parents) do
@@ -199,9 +243,54 @@ function class.issubclass(class, parents)
 	return true
 end
 
+-- And isinstance defers to issubclass.
 function class.isinstance(obj, parents)
 	return type(obj) == "table" and obj.__class__ and class.issubclass(obj.__class__, parents)
 end
+
+-- Our AnnotationWrapper is a purely file local class, it's used to store
+-- deferred application of Annotations. That is, when the class gets built,
+-- then Annotations are applied, so the class name, and the class prototype
+-- are available to the annotation.
+AnnotationWrapper = class.private "AnnotationWrapper"
+{
+	__init__ = function(self, lhs, rhs)
+		self.lhs, self.rhs = lhs, rhs
+	end,
+
+	-- We're just building a left-to-right linked list here
+	__add__ = function(self, other)
+		self.rhs = self.__class__(self.rhs, other)
+		return self
+	end,
+
+	-- Since we have a left-to-right linked list, we can just
+	-- apply them recursively outwards.
+	resolve = function(self, name, cls)
+		if class.isinstance(self.rhs, self.__class__) then
+			self.rhs = self.rhs:resolve(name, cls)
+		end
+		return self.lhs:apply(self.rhs, name, cls)
+	end,
+}
+
+-- Our annotation baseclass, nothing fancy, but it just defines the + operator,
+-- and, perhaps more importantly, has access to AnnotationWrapper.
+class.Annotation = class.private "class.Annotation"
+{
+	-- We're being applied to 'other', so return an AnnotationWrapper, so we
+	-- can be resolved later
+	__add__ = function(self, other)
+		return AnnotationWrapper(self, other)
+	end,
+
+	-- A default implementation of apply which does, predictably, nothing
+	-- Note: The value returned by the annotation replaces the previous value,
+	-- so if nothing (nil) is returned, it will become nil, this is intentional
+	apply = function(self, f, name, class)
+		return f
+	end,
+}
 
 -- Export a Class Commons interface
 -- to allow interoperability between
