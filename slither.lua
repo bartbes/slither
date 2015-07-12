@@ -44,6 +44,31 @@ local function stringtotable(path)
 	return t, name
 end
 
+-- Derives an MRO from a list of (direct) parents
+local function buildmro(parents)
+	local mro = {}
+	local inmro = {}
+	for i, v in ipairs(parents) do
+		for j, w in ipairs(v.__mro__) do
+			-- If it's already in the mro, we move it backwards by removing
+			-- it and then reinserting
+			if inmro[w] then
+				for i, v in ipairs(mro) do
+					if v == w then
+						table.remove(mro, i)
+						break
+					end
+				end
+			end
+
+			table.insert(mro, w)
+			inmro[w] = true
+		end
+	end
+
+	return mro
+end
+
 local AnnotationWrapper -- defined later as a class
 
 -- This is where the actual class generation happens
@@ -63,20 +88,26 @@ local function class_generator(name, b, t)
 		table.insert(temp.__parents__, i)
 	end
 
+	-- Add class access to the original prototype
+	temp.__prototype__ = t
+	temp.__prototype__.__name__ = name
+
+	-- Build the MRO (Member Resolution Order)
+	temp.__mro__ = buildmro(b)
+	table.insert(temp.__mro__, 1, temp.__prototype__)
+
 	-- Store a reference to the library table here
 	local classlib = class
 
 	-- Create our class by attaching a metatable to our object
 	local class = setmetatable(temp, {
-		-- We first catch __class__ and __name__, then look at 't', the given
-		-- definition for our class. Afterwards, we check our parents, in order.
+		-- We first catch __class__ and __name__, then check the MRO, in order.
 		-- If we still don't have a match, make sure we're not matching a
 		-- special method, then call __getattr__ if defined.
 		__index = function(self, key)
 			if key == "__class__" then return temp end
 			if key == "__name__" then return name end
-			if t[key] ~= nil then return t[key] end
-			for i, v in ipairs(b) do
+			for i, v in ipairs(temp.__mro__) do
 				if v[key] ~= nil then return v[key] end
 			end
 			if tostring(key):match("^__.+__$") then return end
