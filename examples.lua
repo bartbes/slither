@@ -89,12 +89,23 @@ class "Serialize" (class.Annotation)
 	apply = function(self, f, name, class)
 		return f, true
 	end,
+
+	format = function(data)
+		return tostring(data)
+	end,
+}
+
+class "SerializeHex" (Serialize)
+{
+	format = function(data)
+		return ("%x"):format(data)
+	end,
 }
 
 function doSerialize(obj)
 	print("Serializing " .. obj.__name__)
-	for member in Serialize:iterateFull(obj.__class__) do
-		print("    " .. member .. " = " .. tostring(obj[member]))
+	for ann, member in Serialize:iterateFull(obj.__class__) do
+		print("    " .. member .. " = " .. ann.format(obj[member]))
 	end
 end
 
@@ -122,7 +133,8 @@ class "TestChild" (Test)
 		end
 	end,
 
-	storage = Serialize() + 0
+	storage = Serialize() + 0,
+	hexStorage = SerializeHex() + 0,
 }
 
 t = TestChild()
@@ -139,4 +151,5 @@ end
 
 doSerialize(t)
 t.storage = 15
+t.hexStorage = 18
 doSerialize(t)
