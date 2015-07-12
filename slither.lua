@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20150711",
+	_VERSION = "Slither 20150712",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -122,6 +122,9 @@ local function class_generator(name, b, t)
 			t[key] = value
 		end,
 
+		-- Storage for annotations
+		__annotations__ = {},
+
 		-- Here we 'allocate' an object
 		allocate = function(instance)
 			-- Create our object's metatable
@@ -183,6 +186,7 @@ local function class_generator(name, b, t)
 	-- objects, here we resolve them and replace them with the resulting value.
 	for i, v in pairs(t) do
 		if classlib.isinstance(v, AnnotationWrapper) then
+			local extra
 			t[i] = v:resolve(i, class)
 		end
 	end
@@ -302,7 +306,16 @@ AnnotationWrapper = class.private "AnnotationWrapper"
 		if class.isinstance(self.rhs, self.__class__) then
 			self.rhs = self.rhs:resolve(name, cls)
 		end
-		return self.lhs:apply(self.rhs, name, cls)
+		local val, extra = self.lhs:apply(self.rhs, name, cls)
+
+		-- If an extra value was returned, store it in the class metatable
+		if extra then
+			local anTable = getmetatable(cls).__annotations__
+			anTable[self.lhs.__class__] = anTable[self.lhs.__class__] or {}
+			anTable[self.lhs.__class__][name] = extra
+		end
+
+		return val
 	end,
 }
 
@@ -321,6 +334,43 @@ class.Annotation = class.private "class.Annotation"
 	-- so if nothing (nil) is returned, it will become nil, this is intentional
 	apply = function(self, f, name, class)
 		return f
+	end,
+
+	-- Obtain annotation information from a class member, if it exists
+	get = function(self, class, name)
+		local anTable = getmetatable(class).__annotations__
+		if not anTable then return nil end
+		anTable = anTable[self]
+		if not anTable then return nil end
+		return anTable[name]
+	end,
+
+	-- Get all occurences of this annotation's data on a class
+	iterate = function(self, class)
+		local anTable = getmetatable(class).__annotations__
+		if not anTable then return function() return nil end end
+		anTable = anTable[self]
+		if not anTable then return function() return nil end end
+		return pairs(anTable)
+	end,
+
+	-- Get all occurences of this annotation's and its subclasses' data on a
+	-- class
+	iterateFull = function(self, cls)
+		local anTable = getmetatable(cls).__annotations__
+		if not anTable then return function() return nil end end
+
+		return coroutine.wrap(function()
+			for ann, data in pairs(anTable) do
+				-- If this annotation data was left by this class, or one of its
+				-- subclasses, iterate over the data
+				if class.issubclass(ann, self) then
+					for member, value in pairs(data) do
+						coroutine.yield(member, value)
+					end
+				end
+			end
+		end)
 	end,
 }
 

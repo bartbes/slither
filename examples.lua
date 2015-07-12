@@ -60,12 +60,43 @@ Override = class.Override
 class "Debugged" (class.Annotation)
 {
 	apply = function(self, f, name, class)
+		local counter = { count = 0 }
 		return function(...)
 			print("Function " .. class.__name__ .. "." .. name .. " called with " .. select('#', ...) .. " arguments")
+			counter.count = counter.count + 1
 			return f(...)
+		end, counter
+	end,
+}
+
+class "Iterator" (class.Annotation)
+{
+	apply = function(self, f, name, class)
+		local function wrapper(...)
+			coroutine.yield()
+			return f(...)
+		end
+		return function(...)
+			local co = coroutine.wrap(wrapper)
+			co(...)
+			return co
 		end
 	end,
 }
+
+class "Serialize" (class.Annotation)
+{
+	apply = function(self, f, name, class)
+		return f, true
+	end,
+}
+
+function doSerialize(obj)
+	print("Serializing " .. obj.__name__)
+	for member in Serialize:iterateFull(obj.__class__) do
+		print("    " .. member .. " = " .. tostring(obj[member]))
+	end
+end
 
 class "Test"
 {
@@ -81,9 +112,31 @@ class "TestChild" (Test)
 
 	testb = Debugged() + function() end,
 
+	-- Definition below errors because it does not override anything
 	--testc = Override() + function() end,
+
+	count = Iterator() +
+	function(self, start, stop)
+		for i = start, stop do
+			coroutine.yield(i)
+		end
+	end,
+
+	storage = Serialize() + 0
 }
 
 t = TestChild()
 t:test(1)
 t:testb()
+
+for member, counter in Debugged:iterate(TestChild) do
+	print("Class member " .. member .. " called " .. counter.count .. " times")
+end
+
+for num in t:count(5, 8) do
+	print("Count", num)
+end
+
+doSerialize(t)
+t.storage = 15
+doSerialize(t)
