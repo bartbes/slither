@@ -366,7 +366,7 @@ class.Annotation = class.private "class.Annotation"
 				-- subclasses, iterate over the data
 				if class.issubclass(ann, self) then
 					for member, value in pairs(data) do
-						coroutine.yield(member, value)
+						coroutine.yield(ann, member, value)
 					end
 				end
 			end
