@@ -69,7 +69,8 @@ local function buildmro(parents)
 	return mro
 end
 
-local AnnotationWrapper -- defined later as a class
+-- defined later as classes
+local AnnotationWrapper, ClassAnnotationWrapper
 
 -- This is where the actual class generation happens
 local function class_generator(name, b, t)
@@ -182,6 +183,13 @@ local function class_generator(name, b, t)
 		end
 		})
 
+	-- Do our pre-application of class Annotations
+	for i, v in ipairs(t) do
+		if classlib.isinstance(v, ClassAnnotationWrapper) then
+			v:resolvePre(name, t)
+		end
+	end
+
 	-- If annotations are used, we are left with a bunch of AnnotationWrapper
 	-- objects, here we resolve them and replace them with the resulting value.
 	for i, v in pairs(t) do
@@ -194,6 +202,16 @@ local function class_generator(name, b, t)
 	-- Now we deal with class attributes
 	for i, v in ipairs(t.__attributes__ or {}) do
 		class = v(class) or class
+	end
+
+	-- And our post-application of class Annotations
+	for i, v in ipairs(t) do
+		if classlib.isinstance(v, ClassAnnotationWrapper) then
+			v:resolvePost(name, class)
+
+			-- Now remove this ClassAnnotationWrapper
+			t[i] = nil
+		end
 	end
 
 	return class
@@ -319,6 +337,24 @@ AnnotationWrapper = class.private "AnnotationWrapper"
 	end,
 }
 
+-- Similarly our ClassAnnotationWrapper wraps.. well, class annoations
+ClassAnnotationWrapper = class.private "ClassAnnotationWrapper"
+{
+	__init__ = function(self, ann)
+		self.ann = ann
+	end,
+
+	-- Our 'pre-application'
+	resolvePre = function(self, name, prototype)
+		return self.ann:applyClassPre(name, prototype)
+	end,
+
+	-- Our 'post-application'
+	resolvePost = function(self, name, class)
+		return self.ann:applyClassPost(name, class)
+	end,
+}
+
 -- Our annotation baseclass, nothing fancy, but it just defines the + operator,
 -- and, perhaps more importantly, has access to AnnotationWrapper.
 class.Annotation = class.private "class.Annotation"
@@ -329,11 +365,29 @@ class.Annotation = class.private "class.Annotation"
 		return AnnotationWrapper(self, other)
 	end,
 
+	-- We're being applied to a class, so return a ClassAnnotationWrapper, to be
+	-- resolved later
+	__neg__ = function(self)
+		return ClassAnnotationWrapper(self)
+	end,
+
 	-- A default implementation of apply which does, predictably, nothing
 	-- Note: The value returned by the annotation replaces the previous value,
 	-- so if nothing (nil) is returned, it will become nil, this is intentional
 	apply = function(self, f, name, class)
 		return f
+	end,
+
+	-- And a default implementation of applyClassPre, which runs on the class'
+	-- prototype. This is used for instance when applying Annotations to members
+	-- or adding new members that could have annotations.
+	applyClassPre = function(self, name, prototype)
+	end,
+
+	-- And applyClassPost, which runs on the final class. This can be used to do
+	-- things with the final members, like modifying the constructor based on
+	-- which annotations have been applied.
+	applyClassPost = function(self, name, class)
 	end,
 
 	-- Obtain annotation information from a class member, if it exists

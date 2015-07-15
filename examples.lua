@@ -102,12 +102,24 @@ class "SerializeHex" (Serialize)
 	end,
 }
 
-function doSerialize(obj)
-	print("Serializing " .. obj.__name__)
-	for ann, member in Serialize:iterateFull(obj.__class__) do
-		print("    " .. member .. " = " .. ann.format(obj[member]))
-	end
-end
+class "SerializedName" (class.Annotation)
+{
+	applyClassPre = function(self, name, prototype)
+		prototype.name = Serialize() + name
+	end,
+}
+
+class "AddSerializer" (class.Annotation)
+{
+	applyClassPost = function(self, name, class)
+		function class:serialize()
+			print("Serializing " .. name)
+			for ann, member in Serialize:iterateFull(class) do
+				print("    " .. member .. " = " .. ann.format(self[member]))
+			end
+		end
+	end,
+}
 
 class "Test"
 {
@@ -117,6 +129,9 @@ class "Test"
 
 class "TestChild" (Test)
 {
+	-SerializedName(),
+	-AddSerializer(),
+
 	test = Debugged() + Override() +
 	function()
 	end,
@@ -149,7 +164,7 @@ for num in t:count(5, 8) do
 	print("Count", num)
 end
 
-doSerialize(t)
+t:serialize()
 t.storage = 15
 t.hexStorage = 18
-doSerialize(t)
+t:serialize()
