@@ -123,8 +123,10 @@ class "AddSerializer" (class.Annotation)
 
 class "Test"
 {
-	test = function()
+	test = Serialize() + function()
 	end,
+
+	inherited = Serialize() + "Yes, definitely!",
 }
 
 class "TestChild" (Test)

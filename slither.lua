@@ -190,6 +190,31 @@ local function class_generator(name, b, t)
 		end
 	end
 
+	-- Inherit annotations for any member we don't overwrite
+	local ourAnns = getmetatable(class).__annotations__
+	for i, v in ipairs(b) do
+		local anns = getmetatable(v).__annotations__
+
+		-- For every annotation on our (direct) parents...
+		for ann, storage in pairs(anns) do
+			local newstorage = {}
+
+			-- ... for every annotated member ...
+			for member, value in pairs(storage) do
+				-- ... if we don't override it, copy the annotation
+				if not t[member] then
+					newstorage[member] = value
+				end
+			end
+
+			-- If we've stored anything at all, assign it to our annotation
+			-- storage
+			if next(newstorage) then
+				ourAnns[ann] = newstorage
+			end
+		end
+	end
+
 	-- If annotations are used, we are left with a bunch of AnnotationWrapper
 	-- objects, here we resolve them and replace them with the resulting value.
 	for i, v in pairs(t) do
