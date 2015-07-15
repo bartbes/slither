@@ -392,18 +392,14 @@ class.Annotation = class.private "class.Annotation"
 
 	-- Obtain annotation information from a class member, if it exists
 	get = function(self, class, name)
-		local anTable = getmetatable(class).__annotations__
-		if not anTable then return nil end
-		anTable = anTable[self]
+		local anTable = getmetatable(class).__annotations__[self]
 		if not anTable then return nil end
 		return anTable[name]
 	end,
 
 	-- Get all occurences of this annotation's data on a class
 	iterate = function(self, class)
-		local anTable = getmetatable(class).__annotations__
-		if not anTable then return function() return nil end end
-		anTable = anTable[self]
+		local anTable = getmetatable(class).__annotations__[self]
 		if not anTable then return function() return nil end end
 		return pairs(anTable)
 	end,
@@ -412,7 +408,6 @@ class.Annotation = class.private "class.Annotation"
 	-- class
 	iterateFull = function(self, cls)
 		local anTable = getmetatable(cls).__annotations__
-		if not anTable then return function() return nil end end
 
 		return coroutine.wrap(function()
 			for ann, data in pairs(anTable) do
