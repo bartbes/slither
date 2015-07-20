@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20150715",
+	_VERSION = "Slither 20150720",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -33,7 +33,7 @@ local class =
 
 -- Because we parse "string paths", yet we need an actual table
 local function stringtotable(path)
-	local t = _G
+	local t = _ENV or _G
 	local name
 
 	for part in path:gmatch("[^%.]+") do
