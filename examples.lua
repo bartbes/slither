@@ -59,11 +59,16 @@ Override = class.Override
 
 class "Debugged" (class.Annotation)
 {
-	apply = function(self, f, name, class)
-		local counter = { count = 0 }
+	apply = function(self, f, name, class, counter)
+		if counter then
+			counter.step = counter.step + 1
+			return f
+		end
+
+		counter = { count = 0, step = 1 }
 		return function(...)
 			print("Function " .. class.__name__ .. "." .. name .. " called with " .. select('#', ...) .. " arguments")
-			counter.count = counter.count + 1
+			counter.count = counter.count + counter.step
 			return f(...)
 		end, counter
 	end,
@@ -138,7 +143,7 @@ class "TestChild" (Test)
 	function()
 	end,
 
-	testb = Debugged() + function() end,
+	testb = Debugged() + Debugged() + function() end,
 
 	-- Definition below errors because it does not override anything
 	--testc = Override() + function() end,

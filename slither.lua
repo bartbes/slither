@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20150720",
+	_VERSION = "Slither 20150729",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -349,13 +349,22 @@ AnnotationWrapper = class.private "AnnotationWrapper"
 		if class.isinstance(self.rhs, self.__class__) then
 			self.rhs = self.rhs:resolve(name, cls)
 		end
-		local val, extra = self.lhs:apply(self.rhs, name, cls)
 
-		-- If an extra value was returned, store it in the class metatable
-		if extra then
-			local anTable = getmetatable(cls).__annotations__
+		-- Get any data previous invocations of this annotation on this member
+		-- returned
+		local anTable = getmetatable(cls).__annotations__
+		local prev = anTable[self.lhs.__class__]
+		if prev then prev = prev[name] end
+
+		local val, extra = self.lhs:apply(self.rhs, name, cls, prev)
+
+		-- If new data was returned, replace the old data
+		if extra then prev = extra end
+
+		-- If data is available, store it in the class metatable
+		if prev then
 			anTable[self.lhs.__class__] = anTable[self.lhs.__class__] or {}
-			anTable[self.lhs.__class__][name] = extra
+			anTable[self.lhs.__class__][name] = prev
 		end
 
 		return val
