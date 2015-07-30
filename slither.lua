@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20150729",
+	_VERSION = "Slither 20150730",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -184,9 +184,12 @@ local function class_generator(name, b, t)
 		})
 
 	-- Do our pre-application of class Annotations
-	for i, v in ipairs(t) do
-		if classlib.isinstance(v, ClassAnnotationWrapper) then
-			v:resolvePre(name, t)
+	-- This is in "reverse reverse" order, so the top-most annotation gets
+	-- to pre-apply first, then post-apply last. This makes it the "most
+	-- powerful", which matches the behaviour for members.
+	for i = 1, #t, 1 do
+		if classlib.isinstance(t[i], ClassAnnotationWrapper) then
+			t[i]:resolvePre(name, t)
 		end
 	end
 
@@ -230,9 +233,10 @@ local function class_generator(name, b, t)
 	end
 
 	-- And our post-application of class Annotations
-	for i, v in ipairs(t) do
-		if classlib.isinstance(v, ClassAnnotationWrapper) then
-			v:resolvePost(name, class)
+	-- In "reverse" order, as explained in the pre-application.
+	for i = #t, 1, -1 do
+		if classlib.isinstance(t[i], ClassAnnotationWrapper) then
+			t[i]:resolvePost(name, class)
 
 			-- Now remove this ClassAnnotationWrapper
 			t[i] = nil
