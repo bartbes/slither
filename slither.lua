@@ -31,19 +31,6 @@ local class =
 	_LICENSE = _LICENSE,
 }
 
--- Because we parse "string paths", yet we need an actual table
-local function stringtotable(path)
-	local t = _ENV or _G
-	local name
-
-	for part in path:gmatch("[^%.]+") do
-		t = name and t[name] or t
-		name = part
-	end
-
-	return t, name
-end
-
 -- Derives an MRO from a list of (direct) parents
 local function buildmro(parents)
 	local mro = {}
@@ -239,34 +226,23 @@ end
 -- them from strings if necessary. Then we produce a new function that results
 -- in the final call to class_generator. If we've not been passed parents, call
 -- class_generator now, we already have our prototype.
-local function inheritance_handler(set, name, ...)
+local function inheritance_handler(name, ...)
 	local args = {...}
 
 	for i = 1, select("#", ...) do
 		if args[i] == nil then
-			error("nil passed to class, check the parents")
+			error("nil passed to class, check if the parents are in scope and spelled correctly")
 		end
 	end
 
 	local t = nil
-	if #args == 1 and type(args[1]) == "table" and not args[1].__class__ then
+	if #args == 1 and not args[1].__class__ then
 		t = args[1]
 		args = {}
 	end
 
-	for i, v in ipairs(args) do
-		if type(v) == "string" then
-			local t, name = stringtotable(v)
-			args[i] = t[name]
-		end
-	end
-
 	local func = function(t)
 		local class = class_generator(name, args, t)
-		if set then
-			local root_table, name = stringtotable(name)
-			root_table[name] = class
-		end
 		return class
 	end
 
@@ -277,25 +253,15 @@ local function inheritance_handler(set, name, ...)
 	end
 end
 
--- If class.private is called, we don't set the resulting variable
-function class.private(name)
-	return function(...)
-		return inheritance_handler(false, name, ...)
-	end
-end
-
--- But if class is called, we do
 class = setmetatable(class, {
 	__call = function(self, name)
 		return function(...)
-			return inheritance_handler(true, name, ...)
+			return inheritance_handler(name, ...)
 		end
 	end,
 })
 
--- issubclass is a "simple" search
--- Note the "fancy" feature where issubclass(A, A) is true because {A} is the
--- first list of parents searched.
+-- issubclass is a simple search
 function class.issubclass(class, parents)
 	if parents.__class__ then parents = {parents} end
 	for i, v in ipairs(parents) do
@@ -316,7 +282,7 @@ end
 -- deferred application of Annotations. That is, when the class gets built,
 -- then Annotations are applied, so the class name, and the class prototype
 -- are available to the annotation.
-AnnotationWrapper = class.private "AnnotationWrapper"
+AnnotationWrapper = class "AnnotationWrapper"
 {
 	__init__ = function(self, lhs, rhs)
 		self.lhs, self.rhs = lhs, rhs
@@ -357,7 +323,7 @@ AnnotationWrapper = class.private "AnnotationWrapper"
 }
 
 -- Similarly our ClassAnnotationWrapper wraps.. well, class annoations
-ClassAnnotationWrapper = class.private "ClassAnnotationWrapper"
+ClassAnnotationWrapper = class "ClassAnnotationWrapper"
 {
 	__init__ = function(self, ann)
 		self.ann = ann
@@ -376,7 +342,7 @@ ClassAnnotationWrapper = class.private "ClassAnnotationWrapper"
 
 -- Our annotation baseclass, nothing fancy, but it just defines the + operator,
 -- and, perhaps more importantly, has access to AnnotationWrapper.
-class.Annotation = class.private "class.Annotation"
+class.Annotation = class "class.Annotation"
 {
 	-- We're being applied to 'other', so return an AnnotationWrapper, so we
 	-- can be resolved later
@@ -442,7 +408,7 @@ class.Annotation = class.private "class.Annotation"
 	end,
 }
 
-class.Override = class.private "class.Override" (class.Annotation)
+class.Override = class "class.Override" (class.Annotation)
 {
 	apply = function(self, f, name, class)
 		for i, v in ipairs(class.__parents__) do
