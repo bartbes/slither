@@ -483,3 +483,63 @@ Test("Children get added to their indirect parents' subclass list", function()
 
 	assert(A.__subclasses__[C])
 end)
+
+Test("class.super finds element from superclass", function()
+	local A = class "A"
+	{
+		test = function()
+			return 5
+		end,
+	}
+	local B; B = class "B" (A)
+	{
+		test = function(self)
+			return class.super(B, self, "test")()
+		end,
+	}
+
+	local b = B()
+	assert(b:test() == 5)
+	assert(B:test() == 5)
+end)
+
+Test("class.super finds no element from superclass if it does not exist", function()
+	local A = class "A"
+	{
+	}
+
+	local B = class "B" (A)
+	{
+		test = 5,
+	}
+
+	local b = B()
+	assert(b.test == 5)
+	assert(class.super(B, b, "test") == nil)
+	assert(B.test == 5)
+	assert(class.super(B, B, "test") == nil)
+end)
+
+Test("class.super errors on invalid super call", function()
+	local A = class "A" {}
+	local B = class "B" {}
+
+	local function invalid(inst)
+		class.super(A, inst, "test")
+	end
+
+	local b = B()
+	assert(not pcall(invalid, b))
+	assert(not pcall(invalid, B))
+end)
+
+Test("class.super finds no element if the root class was used", function()
+	local A = class "A"
+	{
+		test = 5,
+	}
+
+	local a = A()
+	local root = A.__mro__[#A.__mro__]
+	assert(class.super(root, a, "test") == nil)
+end)
