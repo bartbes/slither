@@ -468,3 +468,18 @@ Test("Allocate can allocate 'on' existing tables", function()
 	assert(a.test1)
 	assert(a.test2)
 end)
+
+Test("Children get added to their direct parents' subclass list", function()
+	local A = class "A" {}
+	local B = class "B" (A) {}
+
+	assert(A.__subclasses__[B])
+end)
+
+Test("Children get added to their indirect parents' subclass list", function()
+	local A = class "A" {}
+	local B = class "B" (A) {}
+	local C = class "C" (B) {}
+
+	assert(A.__subclasses__[C])
+end)
