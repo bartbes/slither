@@ -85,6 +85,13 @@ local function class_generator(name, parentlist, prototype)
 	-- Store a reference to the library table here
 	local classlib = class
 
+	-- Add our root object, for classes that derive from nothing
+	-- NOTE: This means that *all* classes will derive from Object,
+	-- unless it was explicitly removed at some point
+	if #parentlist == 0 then
+		parentlist[1] = class.Object
+	end
+
 	-- Compose a list of parents
 	local parents = {}
 	for _, v in ipairs(parentlist) do
@@ -317,6 +324,11 @@ function class.super(current_class, instance, key)
 	assert(pos, ("Class '%s' is not a superclass of '%s'!"):format(current_class.__name__, instance.__name__))
 	return mro:get(key, pos+1)
 end
+
+-- Our root Object class
+class.Object = class "Object"
+{
+}
 
 -- Our AnnotationWrapper is a purely file local class, it's used to store
 -- deferred application of Annotations. That is, when the class gets built,
