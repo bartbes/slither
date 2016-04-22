@@ -31,6 +31,23 @@ local class =
 	_LICENSE = _LICENSE,
 }
 
+local function mro_get(mro, key, starti)
+	for i = starti or 1, #mro do
+		if mro[i][key] ~= nil then
+			return mro[i][key]
+		end
+	end
+end
+
+local function mro_find(mro, entry)
+	local prototype = rawget(entry, "__prototype__")
+	for i = 1, #mro do
+		if mro[i] == entry or mro[i] == prototype then
+			return i
+		end
+	end
+end
+
 -- Derives an MRO from a list of (direct) parents
 local function buildmro(parents)
 	local mro = {}
@@ -47,6 +64,9 @@ local function buildmro(parents)
 			inmro[w] = #mro
 		end
 	end
+
+	mro.get = mro_get
+	mro.find = mro_find
 
 	return mro
 end
@@ -94,9 +114,8 @@ local function class_generator(name, parentlist, prototype)
 		__index = function(self, key)
 			if key == "__class__" then return class end
 			if key == "__name__" then return name end
-			for i, v in ipairs(class.__mro__) do
-				if v[key] ~= nil then return v[key] end
-			end
+			local v = class.__mro__:get(key)
+			if v ~= nil then return v end
 			if tostring(key):match("^__.+__$") then return end
 			if self.__getattr__ then
 				return self:__getattr__(key)
