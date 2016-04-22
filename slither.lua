@@ -1,6 +1,6 @@
 local _LICENSE = -- zlib / libpng
 [[
-Copyright (c) 2011-2015 Bart van Strien
+Copyright (c) 2011-2016 Bart van Strien
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -53,16 +53,11 @@ local function buildmro(parents)
 			-- If it's already in the mro, we move it backwards by removing
 			-- it and then reinserting
 			if inmro[w] then
-				for i, v in ipairs(mro) do
-					if v == w then
-						table.remove(mro, i)
-						break
-					end
-				end
+				table.remove(mro, inmro[w])
 			end
 
 			table.insert(mro, w)
-			inmro[w] = true
+			inmro[w] = #mro
 		end
 	end
 
@@ -73,42 +68,41 @@ end
 local AnnotationWrapper, ClassAnnotationWrapper
 
 -- This is where the actual class generation happens
-local function class_generator(name, b, t)
-	-- Compose a list of parents
-	local parents = {}
-	for _, v in ipairs(b) do
-		parents[v] = true
-		for _, v in ipairs(v.__parents__) do
-			parents[v] = true
-		end
-	end
-
-	-- Create our 'temp' table, which ends up being the class object
-	local temp = { __parents__ = {} }
-	for i, v in pairs(parents) do
-		table.insert(temp.__parents__, i)
-	end
-
-	-- Add class access to the original prototype
-	temp.__prototype__ = t
-	temp.__prototype__.__name__ = name
-
-	-- Build the MRO (Member Resolution Order)
-	temp.__mro__ = buildmro(b)
-	table.insert(temp.__mro__, 1, temp.__prototype__)
-
+local function class_generator(name, parentlist, prototype)
 	-- Store a reference to the library table here
 	local classlib = class
 
+	-- Compose a list of parents
+	local parents = {}
+	for _, v in ipairs(parentlist) do
+		parents[v] = true
+		for i, _ in pairs(v.__parents__) do
+			parents[i] = true
+		end
+	end
+
+	-- Create our 'class' table, which ends up being the class object
+	local class = { __parents__ = parents }
+
+	-- Add class access to the original prototype
+	class.__prototype__ = prototype
+	class.__prototype__.__name__ = name
+
+	-- Build the MRO (Member Resolution Order)
+	class.__mro__ = buildmro(parentlist)
+	table.insert(class.__mro__, 1, class.__prototype__)
+
+	local instance_mt
+
 	-- Create our class by attaching a metatable to our object
-	local class = setmetatable(temp, {
+	setmetatable(class, {
 		-- We first catch __class__ and __name__, then check the MRO, in order.
 		-- If we still don't have a match, make sure we're not matching a
 		-- special method, then call __getattr__ if defined.
 		__index = function(self, key)
-			if key == "__class__" then return temp end
+			if key == "__class__" then return class end
 			if key == "__name__" then return name end
-			for i, v in ipairs(temp.__mro__) do
+			for i, v in ipairs(class.__mro__) do
 				if v[key] ~= nil then return v[key] end
 			end
 			if tostring(key):match("^__.+__$") then return end
@@ -118,60 +112,16 @@ local function class_generator(name, b, t)
 		end,
 
 		-- Attaching things to our class later on can simply be modeled
-		-- as assigning to the original input table.
-		__newindex = function(self, key, value)
-			t[key] = value
-		end,
+		-- as assigning to the prototype.
+		__newindex = prototype,
 
 		-- Storage for annotations
 		__annotations__ = {},
 
 		-- Here we 'allocate' an object
 		allocate = function(instance)
-			-- Create our object's metatable
-			local smt = getmetatable(temp)
-			local mt = {__index = smt.__index}
-
-			-- Assigning to the object either calls __setattr__ or sets it on
-			-- the object directly.
-			function mt:__newindex(key, value)
-				if self.__setattr__ then
-					return self:__setattr__(key, value)
-				else
-					return rawset(self, key, value)
-				end
-			end
-
-			-- If __cmp__ is defined, we want to emit both the eq and lt
-			-- operations, we cache it on the class itself and then assign it
-			-- to our metatable.
-			if temp.__cmp__ then
-				if not smt.eq or not smt.lt then
-					function smt.eq(a, b)
-						return a.__cmp__(a, b) == 0
-					end
-					function smt.lt(a, b)
-						return a.__cmp__(a, b) < 0
-					end
-				end
-				mt.__eq = smt.eq
-				mt.__lt = smt.lt
-			end
-
-			-- Now map the rest of our special functions to metamethods
-			for i, v in pairs{
-				__call__ = "__call", __len__ = "__len",
-				__add__ = "__add", __sub__ = "__sub",
-				__mul__ = "__mul", __div__ = "__div",
-				__mod__ = "__mod", __pow__ = "__pow",
-				__neg__ = "__unm", __concat__ = "__concat",
-				__str__ = "__tostring",
-				} do
-				if temp[i] then mt[v] = temp[i] end
-			end
-
-			-- Finally join our (possibly given) instance with the metatable
-			return setmetatable(instance or {}, mt)
+			-- Join our (possibly given) instance with the metatable
+			return setmetatable(instance or {}, instance_mt)
 		end,
 
 		-- Our 'new' call, first allocate an object of this class, then call
@@ -181,21 +131,61 @@ local function class_generator(name, b, t)
 			if instance.__init__ then instance:__init__(...) end
 			return instance
 		end
-		})
+	})
+
+	-- Create our object's metatable
+	do
+		local smt = getmetatable(class)
+		local mt = {__index = smt.__index}
+		instance_mt = mt
+
+		-- Assigning to the object either calls __setattr__ or sets it on
+		-- the object directly.
+		function mt:__newindex(key, value)
+			if self.__setattr__ then
+				return self:__setattr__(key, value)
+			else
+				return rawset(self, key, value)
+			end
+		end
+
+		-- If __cmp__ is defined, we want to emit both the eq and lt
+		-- operations.
+		if class.__cmp__ then
+			function mt.__eq(a, b)
+				return a.__cmp__(a, b) == 0
+			end
+			function mt.__lt(a, b)
+				return a.__cmp__(a, b) < 0
+			end
+		end
+
+		-- Now map the rest of our special functions to metamethods
+		for i, v in pairs{
+				__call__ = "__call", __len__ = "__len",
+				__add__ = "__add", __sub__ = "__sub",
+				__mul__ = "__mul", __div__ = "__div",
+				__mod__ = "__mod", __pow__ = "__pow",
+				__neg__ = "__unm", __concat__ = "__concat",
+				__str__ = "__tostring",
+				} do
+			if class[i] then mt[v] = class[i] end
+		end
+	end
 
 	-- Do our pre-application of class Annotations
 	-- This is in "reverse reverse" order, so the top-most annotation gets
 	-- to pre-apply first, then post-apply last. This makes it the "most
 	-- powerful", which matches the behaviour for members.
-	for i = 1, #t, 1 do
-		if classlib.isinstance(t[i], ClassAnnotationWrapper) then
-			t[i]:resolvePre(name, t)
+	for i = 1, #prototype, 1 do
+		if classlib.isinstance(prototype[i], ClassAnnotationWrapper) then
+			prototype[i]:resolvePre(name, prototype)
 		end
 	end
 
 	-- Inherit annotations for any member we don't overwrite
 	local ourAnns = getmetatable(class).__annotations__
-	for i, v in ipairs(b) do
+	for i, v in ipairs(parentlist) do
 		local anns = getmetatable(v).__annotations__
 
 		-- For every annotation on our (direct) parents...
@@ -205,7 +195,7 @@ local function class_generator(name, b, t)
 			-- ... for every annotated member ...
 			for member, value in pairs(storage) do
 				-- ... if we don't override it, copy the annotation
-				if not t[member] then
+				if prototype[member] ~= nil then
 					newstorage[member] = value
 				end
 			end
@@ -220,26 +210,25 @@ local function class_generator(name, b, t)
 
 	-- If annotations are used, we are left with a bunch of AnnotationWrapper
 	-- objects, here we resolve them and replace them with the resulting value.
-	for i, v in pairs(t) do
+	for i, v in pairs(prototype) do
 		if classlib.isinstance(v, AnnotationWrapper) then
-			local extra
-			t[i] = v:resolve(i, class)
+			prototype[i] = v:resolve(i, class)
 		end
 	end
 
 	-- Now we deal with class attributes
-	for i, v in ipairs(t.__attributes__ or {}) do
+	for i, v in ipairs(prototype.__attributes__ or {}) do
 		class = v(class) or class
 	end
 
 	-- And our post-application of class Annotations
 	-- In "reverse" order, as explained in the pre-application.
-	for i = #t, 1, -1 do
-		if classlib.isinstance(t[i], ClassAnnotationWrapper) then
-			t[i]:resolvePost(name, class)
+	for i = #prototype, 1, -1 do
+		if classlib.isinstance(prototype[i], ClassAnnotationWrapper) then
+			prototype[i]:resolvePost(name, class)
 
 			-- Now remove this ClassAnnotationWrapper
-			t[i] = nil
+			prototype[i] = nil
 		end
 	end
 
@@ -310,19 +299,11 @@ class = setmetatable(class, {
 function class.issubclass(class, parents)
 	if parents.__class__ then parents = {parents} end
 	for i, v in ipairs(parents) do
-		local found = true
-		if v ~= class then
-			found = false
-			for _, p in ipairs(class.__parents__) do
-				if v == p then
-					found = true
-					break
-				end
-			end
+		if class == v or class.__parents__[v] then
+			return true
 		end
-		if not found then return false end
 	end
-	return true
+	return false
 end
 
 -- And isinstance defers to issubclass.
