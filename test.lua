@@ -54,10 +54,16 @@ function main(...)
 		end
 	end
 
+	local classCount = 0
+	for i, v in pairs(class.Object.__subclasses__) do
+		classCount = classCount + 1
+	end
+
 	print()
 	print("SUMMARY")
 	print(("  Failed: %d/%d"):format(failed, #tests))
 	print(("  Success rate: %.0d%%"):format(100*(1-failed/#tests)))
+	print(("  Classes created: %d"):format(classCount))
 end
 
 main(...)
