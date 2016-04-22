@@ -57,7 +57,13 @@ local function buildmro(parents)
 			-- If it's already in the mro, we move it backwards by removing
 			-- it and then reinserting
 			if inmro[w] then
-				table.remove(mro, inmro[w])
+				local oldpos = inmro[w]
+				table.remove(mro, oldpos)
+				for i, v in pairs(inmro) do
+					if v > oldpos then
+						inmro[i] = inmro[i]-1
+					end
+				end
 			end
 
 			table.insert(mro, w)
