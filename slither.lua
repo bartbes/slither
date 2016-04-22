@@ -302,6 +302,16 @@ function class.isinstance(obj, parents)
 			class.issubclass(obj.__class__, parents)
 end
 
+-- super simply finds the current class in the mro, and continues searching
+-- from there
+function class.super(current_class, instance, key)
+	local class = instance.__class__ or instance
+	local mro = class.__mro__
+	local pos = mro:find(current_class)
+	assert(pos, ("Class '%s' is not a superclass of '%s'!"):format(current_class.__name__, instance.__name__))
+	return mro:get(key, pos+1)
+end
+
 -- Our AnnotationWrapper is a purely file local class, it's used to store
 -- deferred application of Annotations. That is, when the class gets built,
 -- then Annotations are applied, so the class name, and the class prototype
