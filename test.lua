@@ -3,7 +3,7 @@ class = require "slither"
 local tests = {}
 local env_mt = {__index = _G}
 
-class "Test" {
+Test = class "Test" {
 	__init__ = function(self, name, func)
 		assert(name, "Test needs a name")
 		self.name = name

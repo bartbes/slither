@@ -15,26 +15,26 @@ Test("Creating a class", function()
 end)
 
 Test("Instantiating", function()
-	class "Test" {}
+	local Test = class "Test" {}
 	Test()
 end)
 
 Test("Accessing attributes", function()
-	class "Test" {
+	local Test = class "Test" {
 		attribute = true
 	}
 	assert(Test().attribute)
 end)
 
 Test("Calling methods", function()
-	class "Test" {
+	local Test = class "Test" {
 		method = function() return true end
 	}
 	assert(Test():method())
 end)
 
 Test("Methods get correct self", function()
-	class "Test" {
+	local Test = class "Test" {
 		method = function(self) return self end
 	}
 	t = Test()
@@ -42,66 +42,66 @@ Test("Methods get correct self", function()
 end)
 
 Test("Inheritance syntax", function()
-	class "TestBase" {}
-	class "Base" ("TestBase") {}
+	local TestBase = class "TestBase" {}
+	local Base = class "Base" (TestBase) {}
 end)
 
 Test("Attribute inheritance", function()
-	class "TestBase" {
+	local TestBase = class "TestBase" {
 		attribute = true
 	}
-	class "Test" ("TestBase") {}
+	local Test = class "Test" (TestBase) {}
 	assert(Test().attribute)
 end)
 
 Test("Method inheritance", function()
-	class "TestBase" {
+	local TestBase = class "TestBase" {
 		method = function() return true end
 	}
-	class "Test" ("TestBase") {}
+	local Test = class "Test" (TestBase) {}
 	assert(Test():method())
 end)
 
 Test("Correct self with method inheritance", function()
-	class "TestBase" {
+	local TestBase = class "TestBase" {
 		method = function(self) return self end
 	}
-	class "Test" ("TestBase") {}
+	local Test = class "Test" (TestBase) {}
 	t = Test()
 	assert(t:method() == t)
 end)
 
 Test("Multiple inheritance", function()
-	class "TestBase1" {
+	local TestBase1 = class "TestBase1" {
 		a = true
 	}
-	class "TestBase2" {
+	local TestBase2 = class "TestBase2" {
 		b = true
 	}
-	class "Test" ("TestBase1", "TestBase2") {}
+	local Test = class "Test" (TestBase1, TestBase2) {}
 	t = Test()
 	assert(t.a)
 	assert(t.b)
 end)
 
 Test("Multiple inheritance preference rules", function()
-	class "TestBase1" {
+	local TestBase1 = class "TestBase1" {
 		a = 1
 	}
-	class "TestBase2" {
+	local TestBase2 = class "TestBase2" {
 		a = 2
 	}
-	class "Test" ("TestBase1", "TestBase2") {}
+	local Test = class "Test" (TestBase1, TestBase2) {}
 	assert(Test().a == 1)
 end)
 
 Test("Correct issubclass indication", function()
-	class "TestBase1" {}
-	class "TestBase2" {}
-	class "TestBase3" {}
-	class "TestBase4" ("TestBase3") {}
-	class "TestBase5" {}
-	class "Test" ("TestBase1", "TestBase2", "TestBase4") {}
+	local TestBase1 = class "TestBase1" {}
+	local TestBase2 = class "TestBase2" {}
+	local TestBase3 = class "TestBase3" {}
+	local TestBase4 = class "TestBase4" (TestBase3) {}
+	local TestBase5 = class "TestBase5" {}
+	local Test = class "Test" (TestBase1, TestBase2, TestBase4) {}
 	-- TestBase5 is NOT a parent,
 	-- TestBase3 IS a parent (though indirectly).
 	assert(class.issubclass(Test, TestBase1))
@@ -114,9 +114,9 @@ Test("Correct issubclass indication", function()
 end)
 
 Test("Correct isinstance indication", function()
-	class "TestBase1" {}
-	class "TestBase2" {}
-	class "Test" ("TestBase1") {}
+	local TestBase1 = class "TestBase1" {}
+	local TestBase2 = class "TestBase2" {}
+	local Test = class "Test" (TestBase1) {}
 	-- TestBase2 is NOT a parent.
 	t = Test()
 	tb2 = TestBase2()
@@ -127,66 +127,66 @@ Test("Correct isinstance indication", function()
 end)
 
 Test("__class__ referring to class of object", function()
-	class "Test" {}
+	local Test = class "Test" {}
 	assert(Test().__class__ == Test)
 end)
 
 Test("__name__ referring to object's class name", function()
-	class "Test" {}
+	local Test = class "Test" {}
 	assert(Test().__name__ == "Test")
 end)
 
 Test("__call__ on calling object", function()
-	class "Test" {
+	local Test = class "Test" {
 		__call__ = function() return 1 end
 	}
 	assert(Test()() == 1)
 end)
 
 Test("__add__ on addition", function()
-	class "Test" {
+	local Test = class "Test" {
 		__add__ = function() return 1 end
 	}
 	assert(Test() + Test() == 1)
 end)
 
 Test("__sub__ on subtraction", function()
-	class "Test" {
+	local Test = class "Test" {
 		__sub__ = function() return 1 end
 	}
 	assert(Test() - Test() == 1)
 end)
 
 Test("__mul__ on multiplication", function()
-	class "Test" {
+	local Test = class "Test" {
 		__mul__ = function() return 1 end
 	}
 	assert(Test() * Test() == 1)
 end)
 
 Test("__div__ on division", function()
-	class "Test" {
+	local Test = class "Test" {
 		__div__ = function() return 1 end
 	}
 	assert(Test() / Test() == 1)
 end)
 
 Test("__mod__ on modulus", function()
-	class "Test" {
+	local Test = class "Test" {
 		__mod__ = function() return 1 end
 	}
 	assert(Test() % Test() == 1)
 end)
 
 Test("__pow__ on power", function()
-	class "Test" {
+	local Test = class "Test" {
 		__pow__ = function() return 1 end
 	}
 	assert(Test() ^ Test() == 1)
 end)
 
 Test("__neg__ on negation", function()
-	class "Test" {
+	local Test = class "Test" {
 		__neg__ = function() return 1 end
 	}
 	assert(-Test() == 1)
@@ -194,7 +194,7 @@ end)
 
 Test("__cmp__ on comparison", function()
 	local mode
-	class "Test" {
+	local Test = class "Test" {
 		__cmp__ = function() return mode end
 	}
 	--mode 0, equal
@@ -209,7 +209,7 @@ Test("__cmp__ on comparison", function()
 end)
 
 Test("__getattr__ on non-existant lookups", function()
-	class "Test" {
+	local Test = class "Test" {
 		__getattr__ = function(self, key)
 			return key == "a"
 		end
@@ -222,7 +222,7 @@ end)
 Test("__setattr__ on non-existant writes", function()
 	local called = false
 	local same = false
-	class "Test" {
+	local Test = class "Test" {
 		__setattr__ = function(self, key, value)
 			called = true
 			same = key == value
@@ -242,33 +242,21 @@ Test("No leaking internal functions/variables", function()
 	assert(not inheritance_handler)
 end)
 
-Test("New-style inheritence", function()
-	class "TestBase" {
-		some_var = true,
-		some_method = function(self) return self.some_var end,
-	}
-	class "Test" (TestBase) {
-	}
-	t = Test()
-	assert(t.some_var)
-	assert(t:some_method())
-end)
-
 Test("Returning of class", function()
-	test = class "Test" {
+	local test = class "Test" {
 	}
-	assert(test == Test)
+	assert(test)
 end)
 
 Test("Private class definition", function()
-	local test = class.private "TestClass" {
+	local test = class "TestClass" {
 	}
 	assert(TestClass == nil)
 	assert(test)
 end)
 
 Test("__getattr__ not getting other __*__", function()
-	class "Test" {
+	local Test = class "Test" {
 		__getattr__ = function()
 			error("__getattr__ reached")
 		end,
@@ -279,7 +267,7 @@ Test("__getattr__ not getting other __*__", function()
 end)
 
 Test("Number indexes and __*__ getattr prevention", function()
-	class "Test"
+	local Test = class "Test"
 	{
 		__getattr__ = function(self, key)
 			if type(key) == "string" then
@@ -295,15 +283,15 @@ Test("Number indexes and __*__ getattr prevention", function()
 end)
 
 Test("Deep inheritance", function()
-	class "A"
+	local A = class "A"
 	{
 		test1 = true,
 		test2 = function() return true end
 	}
 
-	class "B" (A) {}
-	class "C" (B) {}
-	class "D" (C) {}
+	local B = class "B" (A) {}
+	local C = class "C" (B) {}
+	local D = class "D" (C) {}
 
 	d = D()
 	assert(d.test1)
@@ -311,14 +299,14 @@ Test("Deep inheritance", function()
 end)
 
 Test("Double (indirect) inheritance", function()
-	class "A"
+	local A = class "A"
 	{
 		test1 = true,
 		test2 = function() return true end
 	}
 
-	class "B" (A) {}
-	class "C" (B, A) {}
+	local B = class "B" (A) {}
+	local C = class "C" (B, A) {}
 
 	c = C()
 	assert(c.test1)
@@ -332,7 +320,7 @@ Test("Error on non-existent parent", function()
 end)
 
 Test("Resolving false, non-nil values", function()
-	class "A"
+	local A = class "A"
 	{
 		test = false
 	}
@@ -347,7 +335,7 @@ Test("Attributes get called", function()
 		called = true
 	end
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr}
 	}
@@ -360,7 +348,7 @@ Test("Attribute can modify class", function()
 		class.cake = true
 	end
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr}
 	}
@@ -378,7 +366,7 @@ Test("Attribute can modify constructor", function()
 		end
 	end
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr}
 	}
@@ -393,14 +381,14 @@ Test("Attributes are not inherited", function()
 		called = true
 	end
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr}
 	}
 
 	called = false
 
-	class "B" (A)
+	local B = class "B" (A)
 	{
 	}
 
@@ -426,7 +414,7 @@ Test("Attributes are called in order", function()
 		end
 	end
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr1, attr2}
 	}
@@ -435,7 +423,7 @@ Test("Attributes are called in order", function()
 end)
 
 Test("Attributes can be anything callable", function()
-	class "Attribute"
+	local Attribute = class "Attribute"
 	{
 		called = false,
 
@@ -446,7 +434,7 @@ Test("Attributes can be anything callable", function()
 
 	local attr = Attribute()
 
-	class "A"
+	local A = class "A"
 	{
 		__attributes__ = {attr}
 	}
@@ -455,7 +443,7 @@ Test("Attributes can be anything callable", function()
 end)
 
 Test("Allocate allocates, but does not call the constructor", function()
-	class "A"
+	local A = class "A"
 	{
 		__init__ = function(self)
 			self.called = true
@@ -471,7 +459,7 @@ Test("Allocate allocates, but does not call the constructor", function()
 end)
 
 Test("Allocate can allocate 'on' existing tables", function()
-	class "A"
+	local A = class "A"
 	{
 		test1 = true
 	}
