@@ -543,3 +543,41 @@ Test("class.super finds no element if the root class was used", function()
 	local root = A.__mro__[#A.__mro__]
 	assert(class.super(root, a, "test") == nil)
 end)
+
+Test("__new__ can inject members", function()
+	local A; A = class "A"
+	{
+		__new__ = function(self)
+			local inst = class.super(A, self, "__new__")(self)
+			inst.test = 5
+			return inst
+		end
+	}
+
+	local a = A()
+	assert(a.test)
+end)
+
+Test("__new__ can return other classes", function()
+	local A = class "A"
+	{
+		test = 5,
+
+		__init__ = function(self)
+			assert(self.test == 5)
+			self.called = true
+		end,
+	}
+
+	local B; B = class "B"
+	{
+		__new__ = function(self)
+			return A:__new__()
+		end,
+	}
+
+	local b = B()
+	assert(class.isinstance(b, A))
+	assert(b.test == 5)
+	assert(b.called)
+end)

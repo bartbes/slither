@@ -151,7 +151,7 @@ local function class_generator(name, parentlist, prototype)
 		-- Our 'new' call, first allocate an object of this class, then call
 		-- the constructor.
 		__call = function(self, ...)
-			local instance = getmetatable(self).allocate()
+			local instance = self:__new__()
 			if instance.__init__ then instance:__init__(...) end
 			return instance
 		end
@@ -328,6 +328,9 @@ end
 -- Our root Object class
 class.Object = class "Object"
 {
+	__new__ = function(self)
+		return getmetatable(self).allocate()
+	end,
 }
 
 -- Our AnnotationWrapper is a purely file local class, it's used to store
