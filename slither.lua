@@ -104,6 +104,9 @@ local function class_generator(name, parentlist, prototype)
 	-- Create our 'class' table, which ends up being the class object
 	local class = { __parents__ = parents, __subclasses__ = {} }
 
+	-- __subclasses__ is a weak table
+	setmetatable(class.__subclasses__, {__mode = "k"})
+
 	-- Now we'll add it to the subclass list of all parents
 	for parent, _ in pairs(parents) do
 		parent.__subclasses__[class] = true

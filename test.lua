@@ -63,7 +63,7 @@ function main(...)
 	print("SUMMARY")
 	print(("  Failed: %d/%d"):format(failed, #tests))
 	print(("  Success rate: %.0d%%"):format(100*(1-failed/#tests)))
-	print(("  Classes created: %d"):format(classCount))
+	print(("  Classes alive: %d"):format(classCount))
 end
 
 main(...)
