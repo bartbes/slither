@@ -581,3 +581,52 @@ Test("__new__ can return other classes", function()
 	assert(b.test == 5)
 	assert(b.called)
 end)
+
+Test("Non-overwritten members inherit annotations", function()
+	local ann = class "ann" (class.Annotation)
+	{
+		apply = function(self, value, name, class)
+			return value, true
+		end,
+	}
+
+	local A = class "A"
+	{
+		test = ann() + 5,
+	}
+
+	local B = class "B" (A)
+	{
+	}
+
+	local found = false
+	for _ in ann:iterate(B) do
+		found = true
+	end
+	assert(found)
+end)
+
+Test("Overwritten members do not inherit annotations", function()
+	local ann = class "ann" (class.Annotation)
+	{
+		apply = function(self, value, name, class)
+			return value, true
+		end,
+	}
+
+	local A = class "A"
+	{
+		test = ann() + 5,
+	}
+
+	local B = class "B" (A)
+	{
+		test = 6,
+	}
+
+	local found = false
+	for _ in ann:iterate(B) do
+		found = true
+	end
+	assert(not found)
+end)
