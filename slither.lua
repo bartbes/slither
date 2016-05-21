@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20160422",
+	_VERSION = "Slither 20160521",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -222,7 +222,7 @@ local function class_generator(name, parentlist, prototype)
 			-- ... for every annotated member ...
 			for member, value in pairs(storage) do
 				-- ... if we don't override it, copy the annotation
-				if prototype[member] ~= nil then
+				if prototype[member] == nil then
 					newstorage[member] = value
 				end
 			end
