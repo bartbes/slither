@@ -630,3 +630,53 @@ Test("Overwritten members do not inherit annotations", function()
 	end
 	assert(not found)
 end)
+
+Test("Classes can be anonymous", function()
+	local A = class
+	{
+		test = 5,
+	}
+
+	local a = A()
+	assert(a.test == 5)
+	assert(a.__name__)
+end)
+
+Test("Anonymous classes can inherit", function()
+	local A = class "A"
+	{
+		test = 5,
+	}
+
+	local B = class (A)
+	{
+		test2 = 10,
+	}
+
+	local b = B()
+	assert(b.test == 5)
+	assert(b.test2 == 10)
+end)
+
+Test("Anonymous classes are added to subclass lists", function()
+	local A = class "A"
+	{
+	}
+
+	local B = class "B" (A)
+	{
+	}
+
+	local C = class (B)
+	{
+	}
+
+	assert(B.__subclasses__[C])
+	assert(A.__subclasses__[C])
+end)
+
+Test("Anonymous classes get unique names", function()
+	local A = class {}
+	local B = class {}
+	assert(A.__name__ ~= B.__name__)
+end)

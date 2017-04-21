@@ -24,7 +24,7 @@ freely, subject to the following restrictions:
 
 local class =
 {
-	_VERSION = "Slither 20160521",
+	_VERSION = "Slither 20170421",
 	-- I have no better versioning scheme, deal with it
 	_DESCRIPTION = "Slither is a pythonic class library for lua",
 	_URL = "http://bitbucket.org/bartbes/slither",
@@ -293,10 +293,24 @@ local function inheritance_handler(name, ...)
 	end
 end
 
+local gen_name
+do
+	local counter = 0
+
+	function gen_name()
+		counter = counter + 1
+		return ("<anonymous class#%d>"):format(counter)
+	end
+end
+
 class = setmetatable(class, {
-	__call = function(self, name)
-		return function(...)
-			return inheritance_handler(name, ...)
+	__call = function(self, name, ...)
+		if type(name) == "string" then
+			return function(...)
+				return inheritance_handler(name, ...)
+			end
+		else
+			return inheritance_handler(gen_name(), name, ...)
 		end
 	end,
 })
