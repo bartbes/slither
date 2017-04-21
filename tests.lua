@@ -680,3 +680,9 @@ Test("Anonymous classes get unique names", function()
 	local B = class {}
 	assert(A.__name__ ~= B.__name__)
 end)
+
+Test("Error when nil is passed as parent class", function()
+	local A = nil
+
+	assert(not pcall(class "B", A))
+end)
